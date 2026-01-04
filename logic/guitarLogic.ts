@@ -50,7 +50,7 @@ const isValidStretch = (frets: number[], strings: number[], voicingType: Voicing
     return span <= 5;
   }
   if (voicingType === VoicingType.DROP_3) {
-    return span <= 4; // Drop 3는 보통 3~4프랫 정도의 범위를 가짐
+    return span <= 4; 
   }
   
   return span <= 3;
@@ -113,11 +113,8 @@ function findValidVoicings(chordPitches: number[], strings: number[], voicingTyp
         results.forEach(frets => voicings.push({ frets, usedStrings: sortedCombo, windowStart: startFret }));
       }
     } else if (voicingType === VoicingType.DROP_3) {
-      // 5줄 세트에서 4개의 줄을 선택 (반드시 중간에 하나를 건너뛰어야 함)
       const possibleCombos = getCombinations(strings, 4).filter(combo => {
         const sorted = [...combo].sort((a, b) => a - b);
-        // Drop 3의 핵심: 가장 낮은 줄과 그 다음 줄 사이에 간격이 하나 있음
-        // 예: [6, 4, 3, 2] -> 5번줄 비어있음 (skip index check)
         return (sorted[1] - sorted[0] === 2) && (sorted[2] - sorted[1] === 1) && (sorted[3] - sorted[2] === 1);
       });
 
@@ -240,15 +237,17 @@ export const generateRandomPuzzle = (
     }
   }
 
+  // Fallback: 하드코딩된 'C' 대신 허용된 루트 중 첫 번째 사용
+  const fallbackRoot = rootsToUse[0] || 'C';
   return {
-    currentKey: 'C',
-    rootNote: 'C',
+    currentKey: fallbackRoot,
+    rootNote: fallbackRoot,
     quality: ChordQuality.MAJOR,
     voicingType: VoicingType.TRIAD,
     strings: [1, 2, 3],
     fixedRoot: { string: 1, fret: 8 },
-    fixedNoteName: 'C',
+    fixedNoteName: fallbackRoot,
     windowStartFret: 7,
-    chordNotes: ['C', 'E', 'G']
+    chordNotes: getChordNotes(fallbackRoot, ChordQuality.MAJOR)
   };
 };

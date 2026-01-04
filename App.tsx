@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { VoicingType, ChordQuality, GameState, NoteName } from './types';
 import { generateRandomPuzzle, getPitch, getNoteAtPitch } from './logic/guitarLogic';
 import { NOTE_NAMES } from './constants';
@@ -18,16 +18,30 @@ import {
   Hash
 } from 'lucide-react';
 
+// 초기화 시 사용할 공통 루트 노트 미리 결정
+const INITIAL_RANDOM_ROOT = NOTE_NAMES[Math.floor(Math.random() * NOTE_NAMES.length)];
+
 const App: React.FC = () => {
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  
+  // 초기 필터 상태 - 미리 결정된 INITIAL_RANDOM_ROOT 사용
   const [enabledTypes, setEnabledTypes] = useState<VoicingType[]>([
     VoicingType.TRIAD
   ]);
   
-  const [enabledRoots, setEnabledRoots] = useState<NoteName[]>(() => [
-    NOTE_NAMES[Math.floor(Math.random() * NOTE_NAMES.length)]
-  ]);
+  const [enabledRoots, setEnabledRoots] = useState<NoteName[]>([INITIAL_RANDOM_ROOT]);
+
+  // useState의 초기값으로 함수를 전달(Lazy Initialization)
+  const [gameState, setGameState] = useState<GameState>(() => {
+    // 초기 렌더링 시 필터 상태와 완벽히 일치하는 문제 생성
+    const puzzle = generateRandomPuzzle([VoicingType.TRIAD], [INITIAL_RANDOM_ROOT]);
+    return {
+      ...puzzle,
+      selectedNotes: {},
+      score: 0,
+      totalAttempts: 0,
+      isGameOver: false,
+      feedback: null
+    };
+  });
 
   const startNewGame = useCallback(() => {
     const puzzle = generateRandomPuzzle(enabledTypes, enabledRoots);
@@ -43,7 +57,7 @@ const App: React.FC = () => {
 
   const tryAgain = useCallback(() => {
     setGameState(prev => {
-      if (!prev) return null;
+      if (!prev) return prev;
       return {
         ...prev,
         selectedNotes: {},
@@ -77,23 +91,10 @@ const App: React.FC = () => {
     setEnabledRoots(['C']);
   };
 
-  useEffect(() => {
-    const puzzle = generateRandomPuzzle(enabledTypes, enabledRoots);
-    setGameState({
-      ...puzzle,
-      selectedNotes: {},
-      score: 0,
-      totalAttempts: 0,
-      isGameOver: false,
-      feedback: null
-    });
-  }, []);
-
   const handleToggleNote = (stringIdx: number, fret: number) => {
     if (!gameState || gameState.feedback) return;
 
     setGameState(prev => {
-      if (!prev) return null;
       const newSelected = { ...prev.selectedNotes };
       
       if (newSelected[stringIdx] === fret) {
@@ -131,7 +132,6 @@ const App: React.FC = () => {
       }
     }
 
-    // Drop 2와 Drop 3는 모두 4개의 음을 요구함
     const isFourNoteVoicing = gameState.voicingType === VoicingType.DROP_2 || gameState.voicingType === VoicingType.DROP_3;
     const expectedNoteCount = isFourNoteVoicing ? 4 : 3;
     const structureCorrect = allSelectedStringIndices.length === expectedNoteCount;
@@ -139,7 +139,6 @@ const App: React.FC = () => {
     const isCorrect = harmonyCorrect && structureCorrect;
 
     setGameState(prev => {
-      if (!prev) return null;
       return {
         ...prev,
         score: isCorrect ? prev.score + 1 : prev.score,
@@ -151,14 +150,11 @@ const App: React.FC = () => {
 
   const shiftWindow = (dir: 'left' | 'right') => {
     setGameState(prev => {
-      if (!prev) return null;
       let newStart = dir === 'left' ? prev.windowStartFret - 1 : prev.windowStartFret + 1;
       newStart = Math.max(0, Math.min(11, newStart));
       return { ...prev, windowStartFret: newStart };
     });
   };
-
-  if (!gameState) return null;
 
   const isFourNoteVoicing = gameState.voicingType === VoicingType.DROP_2 || gameState.voicingType === VoicingType.DROP_3;
   const expectedNotes = isFourNoteVoicing ? 4 : 3;
@@ -182,7 +178,10 @@ const App: React.FC = () => {
             <Music className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Voicing Master</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Voicing Master</h1>
+              <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase tracking-tighter">v1.0</span>
+            </div>
             <p className="text-slate-500 text-sm">Spread & Closed Harmony Trainer</p>
           </div>
         </div>
@@ -338,7 +337,7 @@ const App: React.FC = () => {
         </div>
       </main>
       <footer className="py-8 text-center text-slate-400 text-xs font-medium">
-        <p>&copy; 2024 Guitar Voicing Master &bull; Mastering the Fretboard One Voicing at a Time</p>
+        <p>&copy; 2026 Guitar Voicing Master &bull; v1.0 &bull; Mastering the Fretboard One Voicing at a Time</p>
       </footer>
     </div>
   );
