@@ -217,7 +217,8 @@ export const generateRandomPuzzle = (
       const categoryVoicings = degreeGroups[Number(selectedDegree)];
       const choice = categoryVoicings[Math.floor(Math.random() * categoryVoicings.length)];
       
-      const fixedIdx = 0; 
+      // 힌트 노트(fixedRoot)를 가장 높은 줄(0) 또는 가장 낮은 줄(length-1) 중에서 랜덤 선택
+      const fixedIdx = Math.random() < 0.5 ? 0 : choice.usedStrings.length - 1;
       const fixedString = choice.usedStrings[fixedIdx];
       const fixedFret = choice.frets[fixedIdx];
       const fixedPitch = getNoteAtPitch(fixedString - 1, fixedFret);
@@ -237,7 +238,6 @@ export const generateRandomPuzzle = (
     }
   }
 
-  // Fallback: 하드코딩된 'C' 대신 허용된 루트 중 첫 번째 사용
   const fallbackRoot = rootsToUse[0] || 'C';
   return {
     currentKey: fallbackRoot,
