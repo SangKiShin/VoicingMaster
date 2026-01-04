@@ -1,5 +1,6 @@
 
-import { NOTE_NAMES, STRING_TUNING, CHORD_SPELLS, VOICING_STRING_SETS, MAJOR_SCALES, LETTERS, LETTER_PITCHES } from '../constants';
+// Fix: removed MAJOR_SCALES from imports as it is not exported from constants and not used in this file
+import { NOTE_NAMES, STRING_TUNING, CHORD_SPELLS, VOICING_STRING_SETS, LETTERS, LETTER_PITCHES } from '../constants';
 import { NoteName, ChordQuality, VoicingType } from '../types';
 
 export const getPitch = (note: string): number => {

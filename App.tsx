@@ -18,7 +18,28 @@ import {
   Hash
 } from 'lucide-react';
 
-const INITIAL_RANDOM_ROOT = NOTE_NAMES[Math.floor(Math.random() * NOTE_NAMES.length)];
+const INITIAL_RANDOM_ROOT = 'C';
+
+// UI 표시용 17개 루트 노트 (C#과 Db 등 이명동음을 구분하여 배치)
+const ROOT_DISPLAY_OPTIONS = [
+  { id: 'C', label: 'C' },
+  { id: 'C#', label: 'C#' },
+  { id: 'Db', label: 'Db' },
+  { id: 'D', label: 'D' },
+  { id: 'D#', label: 'D#' },
+  { id: 'Eb', label: 'Eb' },
+  { id: 'E', label: 'E' },
+  { id: 'F', label: 'F' },
+  { id: 'F#', label: 'F#' },
+  { id: 'Gb', label: 'Gb' },
+  { id: 'G', label: 'G' },
+  { id: 'G#', label: 'G#' },
+  { id: 'Ab', label: 'Ab' },
+  { id: 'A', label: 'A' },
+  { id: 'A#', label: 'A#' },
+  { id: 'Bb', label: 'Bb' },
+  { id: 'B', label: 'B' },
+];
 
 const App: React.FC = () => {
   const [enabledTypes, setEnabledTypes] = useState<VoicingType[]>([VoicingType.TRIAD]);
@@ -113,18 +134,13 @@ const App: React.FC = () => {
   const numCurrentNotes = Object.keys(gameState.selectedNotes).length + 1;
   const canCheck = numCurrentNotes === expectedNotes;
 
-  const formatNoteLabel = (note: string) => {
-    const labels: Record<string, string> = { 'C#': 'C#', 'D#': 'D#', 'F#': 'F#', 'G#': 'G#', 'A#': 'A#' };
-    return labels[note] || note;
-  };
-
   return (
     <div className="max-w-2xl mx-auto p-3 md:p-6 min-h-screen flex flex-col gap-2">
-      {/* Mini Header */}
+      {/* Header */}
       <header className="flex justify-between items-center bg-white p-2 px-4 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-2">
           <Music className="w-4 h-4 text-indigo-600" />
-          <h1 className="text-sm font-black tracking-tight text-slate-900">VOICING MASTER</h1>
+          <h1 className="text-sm font-black tracking-tight text-slate-900 uppercase">Voicing Master</h1>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
@@ -137,7 +153,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Target Info Card - More compact */}
+      {/* Target Info */}
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200 flex flex-col justify-center">
           <span className="text-[8px] text-indigo-200 font-bold uppercase tracking-widest leading-none mb-1">Target Chord</span>
@@ -153,7 +169,7 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Fretboard Container */}
+      {/* Fretboard Section */}
       <div className="flex-1 min-h-0 flex flex-col justify-center gap-2">
         <div className="bg-white border border-slate-200 rounded-3xl p-3 shadow-sm relative overflow-hidden">
           <div className="flex justify-between items-center mb-1 px-1">
@@ -162,8 +178,8 @@ const App: React.FC = () => {
                Window Control
             </div>
             <div className="flex gap-1">
-              <button onClick={() => shiftWindow('left')} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg"><ChevronLeft className="w-4 h-4" /></button>
-              <button onClick={() => shiftWindow('right')} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg"><ChevronRight className="w-4 h-4" /></button>
+              <button onClick={() => shiftWindow('left')} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg active:bg-slate-100 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <button onClick={() => shiftWindow('right')} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg active:bg-slate-100 transition-colors"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
           
@@ -180,52 +196,60 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Action Area - Compact feedback and buttons */}
+      {/* Action Area */}
       <div className="mt-auto py-2">
         {!gameState.feedback ? (
           <button
             onClick={checkAnswer}
             disabled={!canCheck}
-            className={`w-full py-3.5 rounded-2xl text-sm font-bold transition-all shadow-md ${canCheck ? 'bg-indigo-600 text-white active:scale-95' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+            className={`w-full py-4 rounded-2xl text-sm font-bold transition-all shadow-md ${canCheck ? 'bg-indigo-600 text-white active:scale-95' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
           >
-            Verify Shape
+            Verify Voicing
           </button>
         ) : (
           <div className="animate-in fade-in zoom-in duration-200 flex flex-col gap-2">
-            <div className={`py-2.5 rounded-xl border flex items-center justify-center gap-2 ${gameState.feedback === 'correct' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+            <div className={`py-3 rounded-xl border flex items-center justify-center gap-2 ${gameState.feedback === 'correct' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
               {gameState.feedback === 'correct' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-              <span className="text-sm font-bold">{gameState.feedback === 'correct' ? 'Correct!' : 'Try Again'}</span>
+              <span className="text-sm font-bold">{gameState.feedback === 'correct' ? 'Perfect Match!' : 'Incorrect Notes'}</span>
             </div>
             <div className="flex gap-2">
               {gameState.feedback === 'wrong' && (
-                <button onClick={tryAgain} className="flex-1 py-3 bg-white text-slate-600 rounded-xl font-bold border border-slate-200 text-xs flex items-center justify-center gap-1"><RefreshCw className="w-3 h-3" /> Retry</button>
+                <button onClick={tryAgain} className="flex-1 py-3 bg-white text-slate-600 rounded-xl font-bold border border-slate-200 text-xs flex items-center justify-center gap-1 active:bg-slate-50 transition-colors"><RefreshCw className="w-3 h-3" /> Retry</button>
               )}
-              <button onClick={startNewGame} className="flex-[2] py-3 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-lg active:scale-95"><RotateCcw className="w-3 h-3" /> Next Puzzle</button>
+              <button onClick={startNewGame} className="flex-[2] py-3 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-lg active:scale-95 transition-transform"><RotateCcw className="w-3 h-3" /> Next Challenge</button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Mini Settings Collapsible (Compact) */}
+      {/* Training Options */}
       <details className="group border-t border-slate-200 pt-2 mt-1">
         <summary className="list-none flex justify-center items-center gap-1 text-[10px] font-bold text-slate-400 cursor-pointer uppercase tracking-widest hover:text-indigo-500 transition-colors">
-          <Settings2 className="w-3 h-3" /> Training Options
+          <Settings2 className="w-3 h-3" /> Setup Training
         </summary>
         <div className="mt-2 space-y-3 p-1 animate-in slide-in-from-top-2 duration-200">
            <div className="bg-slate-100/50 p-2 rounded-xl">
-             <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold mb-1"><Hash className="w-2 h-2" /> ROOTS</div>
-             <div className="flex flex-wrap gap-1">
-               {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
-                 <button key={n} onClick={() => toggleRootNote(n)} className={`px-2 py-1 rounded-md text-[9px] font-bold transition-all border ${enabledRoots.includes(n) ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white text-slate-400 border-slate-200'}`}>{n}</button>
+             <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold uppercase"><Hash className="w-2 h-2" /> Roots (17 Options)</div>
+                <button onClick={selectAllRoots} className="text-[8px] font-bold text-indigo-600 hover:underline">SELECT ALL</button>
+             </div>
+             <div className="grid grid-cols-4 sm:grid-cols-6 gap-1">
+               {ROOT_DISPLAY_OPTIONS.map(opt => (
+                 <button 
+                  key={opt.id} 
+                  onClick={() => toggleRootNote(opt.id)} 
+                  className={`py-1.5 rounded-lg text-[10px] font-bold transition-all border ${enabledRoots.includes(opt.id) ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}
+                 >
+                   {opt.label}
+                 </button>
                ))}
-               <button onClick={selectAllRoots} className="px-2 py-1 rounded-md text-[9px] font-bold text-indigo-600 bg-white border border-indigo-100 italic">ALL</button>
              </div>
            </div>
            <div className="bg-slate-100/50 p-2 rounded-xl">
-             <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold mb-1"><Settings2 className="w-2 h-2" /> TYPES</div>
+             <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold mb-2 uppercase"><Settings2 className="w-2 h-2" /> Voicing Types</div>
              <div className="flex flex-wrap gap-1">
                {Object.values(VoicingType).map(t => (
-                 <button key={t} onClick={() => toggleVoicingType(t)} className={`px-2 py-1 rounded-md text-[9px] font-bold transition-all border ${enabledTypes.includes(t) ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white text-slate-400 border-slate-200'}`}>{t}</button>
+                 <button key={t} onClick={() => toggleVoicingType(t)} className={`px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${enabledTypes.includes(t) ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}>{t}</button>
                ))}
              </div>
            </div>
