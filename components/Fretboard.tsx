@@ -45,9 +45,9 @@ const Fretboard: React.FC<FretboardProps> = ({
                   className={`w-full transition-all duration-300 rounded-full ${
                     isActive 
                       ? 'bg-slate-500 shadow-[0_1px_2px_rgba(0,0,0,0.2)]' 
-                      : 'bg-slate-300 opacity-60' // 비활성화된 줄도 실선으로 더 진하게 표시
+                      : 'bg-slate-300 opacity-60'
                   }`} 
-                  style={{ height: `${1 + s * 0.4}px` }} // 고정된 줄 두께 표현
+                  style={{ height: `${1 + s * 0.4}px` }}
                 />
               </div>
             );
@@ -68,11 +68,16 @@ const Fretboard: React.FC<FretboardProps> = ({
                 </span>
               </div>
               
-              {/* Dot Markers */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.07]">
-                {[3, 5, 7, 9, 12, 15].includes(fret) && (
+              {/* Dot Markers Layer (Improved for 12th fret double dots) */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-[0.08] gap-10">
+                {fret === 12 ? (
+                  <>
+                    <div className="w-5 h-5 rounded-full bg-slate-900" />
+                    <div className="w-5 h-5 rounded-full bg-slate-900" />
+                  </>
+                ) : [3, 5, 7, 9, 15, 17, 19, 21].includes(fret) ? (
                   <div className="w-6 h-6 rounded-full bg-slate-900" />
-                )}
+                ) : null}
               </div>
 
               {/* Note Interaction Nodes */}
@@ -96,7 +101,7 @@ const Fretboard: React.FC<FretboardProps> = ({
                         {isFixedRoot ? fixedNoteName : (revealNotes ? getSpelledNoteForReveal(stringIdx, fret) : '')}
                       </div>
                     )}
-                    {/* Interaction Feedback for active strings (Hover state implicit for mobile) */}
+                    {/* Interaction Feedback */}
                     {isActive && !isFixedRoot && !isSelected && !revealNotes && (
                        <div className="w-5 h-5 rounded-full bg-indigo-500 opacity-0 active:opacity-20 transition-opacity" />
                     )}
