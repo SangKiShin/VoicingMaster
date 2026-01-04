@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Guitar Voicing Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -34,29 +34,36 @@
         font-weight: 600;
         letter-spacing: 0.05em;
       }
+      /* 모바일에서 스크롤바 숨기기 */
+      body {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        overflow-x: hidden;
+      }
+      body::-webkit-scrollbar {
+        display: none;
+      }
     </style>
-    <!-- Import Map: 모든 의존성이 동일한 React 19.0.0 버전을 참조하도록 고정 -->
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@19.0.0",
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
+    "lucide-react": "https://esm.sh/lucide-react@0.460.0?bundle&external=react",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
   </head>
-  <body class="bg-slate-50 text-slate-900 min-h-screen transition-colors duration-500">
+  <body class="bg-slate-50 text-slate-900 min-h-screen">
     <div id="root">
       <div class="initial-loader">
         <div class="loader-icon"></div>
         <div class="loader-text">VOICING MASTER LOADING...</div>
       </div>
     </div>
-    <!-- 엔트리 포인트 스크립트 실행 -->
     <script type="module" src="./index.tsx"></script>
   </body>
 </html>

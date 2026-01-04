@@ -18,20 +18,13 @@ import {
   Hash
 } from 'lucide-react';
 
-// 초기화 시 사용할 공통 루트 노트 미리 결정
 const INITIAL_RANDOM_ROOT = NOTE_NAMES[Math.floor(Math.random() * NOTE_NAMES.length)];
 
 const App: React.FC = () => {
-  // 초기 필터 상태 - 미리 결정된 INITIAL_RANDOM_ROOT 사용
-  const [enabledTypes, setEnabledTypes] = useState<VoicingType[]>([
-    VoicingType.TRIAD
-  ]);
-  
+  const [enabledTypes, setEnabledTypes] = useState<VoicingType[]>([VoicingType.TRIAD]);
   const [enabledRoots, setEnabledRoots] = useState<NoteName[]>([INITIAL_RANDOM_ROOT]);
 
-  // useState의 초기값으로 함수를 전달(Lazy Initialization)
   const [gameState, setGameState] = useState<GameState>(() => {
-    // 초기 렌더링 시 필터 상태와 완벽히 일치하는 문제 생성
     const puzzle = generateRandomPuzzle([VoicingType.TRIAD], [INITIAL_RANDOM_ROOT]);
     return {
       ...puzzle,
@@ -56,103 +49,62 @@ const App: React.FC = () => {
   }, [enabledTypes, enabledRoots]);
 
   const tryAgain = useCallback(() => {
-    setGameState(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        selectedNotes: {},
-        feedback: null
-      };
-    });
+    setGameState(prev => prev ? { ...prev, selectedNotes: {}, feedback: null } : prev);
   }, []);
 
   const toggleVoicingType = (type: VoicingType) => {
-    setEnabledTypes(prev => {
-      if (prev.includes(type)) {
-        if (prev.length === 1) return prev;
-        return prev.filter(t => t !== type);
-      }
-      return [...prev, type];
-    });
+    setEnabledTypes(prev => prev.includes(type) ? (prev.length === 1 ? prev : prev.filter(t => t !== type)) : [...prev, type]);
   };
 
   const toggleRootNote = (note: NoteName) => {
-    setEnabledRoots(prev => {
-      if (prev.includes(note)) {
-        if (prev.length === 1) return prev;
-        return prev.filter(n => n !== note);
-      }
-      return [...prev, note];
-    });
+    setEnabledRoots(prev => prev.includes(note) ? (prev.length === 1 ? prev : prev.filter(n => n !== note)) : [...prev, note]);
   };
 
   const selectAllRoots = () => setEnabledRoots([...NOTE_NAMES]);
-  const clearAllRoots = () => {
-    setEnabledRoots(['C']);
-  };
+  const clearAllRoots = () => setEnabledRoots(['C']);
 
   const handleToggleNote = (stringIdx: number, fret: number) => {
     if (!gameState || gameState.feedback) return;
-
     setGameState(prev => {
       const newSelected = { ...prev.selectedNotes };
-      
-      if (newSelected[stringIdx] === fret) {
-        delete newSelected[stringIdx];
-      } else {
-        newSelected[stringIdx] = fret;
-      }
-      
+      if (newSelected[stringIdx] === fret) delete newSelected[stringIdx];
+      else newSelected[stringIdx] = fret;
       return { ...prev, selectedNotes: newSelected };
     });
   };
 
   const checkAnswer = () => {
     if (!gameState) return;
-
     const targetPitches = gameState.chordNotes.map(n => getPitch(n));
     const targetPitchesSet = new Set(targetPitches);
-    
     const fixedRootStringIdx = gameState.fixedRoot.string - 1;
     const selectedPitches = [
       getNoteAtPitch(fixedRootStringIdx, gameState.fixedRoot.fret),
       ...Object.entries(gameState.selectedNotes).map(([sIdx, fret]) => getNoteAtPitch(Number(sIdx), fret as number))
     ];
     const selectedPitchesSet = new Set(selectedPitches);
-
     const allSelectedStringIndices = [...Object.keys(gameState.selectedNotes).map(Number), fixedRootStringIdx].sort();
-    
     let harmonyCorrect = selectedPitchesSet.size === targetPitchesSet.size;
     if (harmonyCorrect) {
       for (const p of selectedPitchesSet) {
-        if (!targetPitchesSet.has(p)) {
-          harmonyCorrect = false;
-          break;
-        }
+        if (!targetPitchesSet.has(p)) { harmonyCorrect = false; break; }
       }
     }
-
     const isFourNoteVoicing = gameState.voicingType === VoicingType.DROP_2 || gameState.voicingType === VoicingType.DROP_3;
     const expectedNoteCount = isFourNoteVoicing ? 4 : 3;
-    const structureCorrect = allSelectedStringIndices.length === expectedNoteCount;
-
-    const isCorrect = harmonyCorrect && structureCorrect;
-
-    setGameState(prev => {
-      return {
-        ...prev,
-        score: isCorrect ? prev.score + 1 : prev.score,
-        totalAttempts: prev.totalAttempts + 1,
-        feedback: isCorrect ? 'correct' : 'wrong'
-      };
-    });
+    const isCorrect = harmonyCorrect && allSelectedStringIndices.length === expectedNoteCount;
+    setGameState(prev => ({
+      ...prev,
+      score: isCorrect ? prev.score + 1 : prev.score,
+      totalAttempts: prev.totalAttempts + 1,
+      feedback: isCorrect ? 'correct' : 'wrong'
+    }));
   };
 
   const shiftWindow = (dir: 'left' | 'right') => {
     setGameState(prev => {
       let newStart = dir === 'left' ? prev.windowStartFret - 1 : prev.windowStartFret + 1;
-      newStart = Math.max(0, Math.min(11, newStart));
-      return { ...prev, windowStartFret: newStart };
+      return { ...prev, windowStartFret: Math.max(0, Math.min(11, newStart)) };
     });
   };
 
@@ -162,143 +114,59 @@ const App: React.FC = () => {
   const canCheck = numCurrentNotes === expectedNotes;
 
   const formatNoteLabel = (note: string) => {
-    if (note === 'C#') return 'C#/Db';
-    if (note === 'D#') return 'D#/Eb';
-    if (note === 'F#') return 'F#/Gb';
-    if (note === 'G#') return 'G#/Ab';
-    if (note === 'A#') return 'A#/Bb';
-    return note;
+    const labels: Record<string, string> = { 'C#': 'C#', 'D#': 'D#', 'F#': 'F#', 'G#': 'G#', 'A#': 'A#' };
+    return labels[note] || note;
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 min-h-screen flex flex-col">
-      <header className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/20">
-            <Music className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Voicing Master</h1>
-              <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md border border-slate-200 uppercase tracking-tighter">v1.0</span>
-            </div>
-            <p className="text-slate-500 text-sm">Spread & Closed Harmony Trainer</p>
-          </div>
+    <div className="max-w-2xl mx-auto p-3 md:p-6 min-h-screen flex flex-col gap-2">
+      {/* Mini Header */}
+      <header className="flex justify-between items-center bg-white p-2 px-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2">
+          <Music className="w-4 h-4 text-indigo-600" />
+          <h1 className="text-sm font-black tracking-tight text-slate-900">VOICING MASTER</h1>
         </div>
-
-        <div className="flex items-center gap-6 bg-white px-6 py-3 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Accuracy</span>
-            <span className="text-lg font-mono font-bold text-indigo-600">
-              {gameState.totalAttempts === 0 ? '0%' : Math.round((gameState.score / gameState.totalAttempts) * 100) + '%'}
-            </span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <Trophy className="w-3 h-3 text-amber-500" />
+            <span className="text-xs font-bold text-slate-800">{gameState.score}</span>
           </div>
-          <div className="w-px h-8 bg-slate-200" />
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Score</span>
-            <div className="flex items-center gap-1.5">
-              <Trophy className="w-4 h-4 text-amber-500" />
-              <span className="text-lg font-mono font-bold text-slate-800">{gameState.score}</span>
-            </div>
+          <div className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+            {gameState.totalAttempts === 0 ? '0%' : Math.round((gameState.score / gameState.totalAttempts) * 100) + '%'}
           </div>
         </div>
       </header>
 
-      {/* Filters Section */}
-      <div className="space-y-4 mb-8">
-        <div className="bg-white border border-slate-200 rounded-2xl p-2 flex flex-wrap gap-2 shadow-sm items-center">
-          <div className="px-3 flex items-center gap-2 text-slate-400">
-            <Settings2 className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-widest">Voicing Types</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {Object.values(VoicingType).map(type => {
-              const isActive = enabledTypes.includes(type);
-              return (
-                <button
-                  key={type}
-                  onClick={() => toggleVoicingType(type)}
-                  className={`
-                    px-4 py-2 rounded-xl text-sm font-bold transition-all
-                    ${isActive 
-                      ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-sm' 
-                      : 'bg-slate-50 text-slate-400 border border-transparent hover:bg-slate-100'}
-                  `}
-                >
-                  {type}
-                </button>
-              );
-            })}
+      {/* Target Info Card - More compact */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-200 flex flex-col justify-center">
+          <span className="text-[8px] text-indigo-200 font-bold uppercase tracking-widest leading-none mb-1">Target Chord</span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-black text-white">{gameState.rootNote}</span>
+            <span className="text-lg font-bold text-indigo-200">{gameState.quality}</span>
           </div>
         </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-slate-400">
-              <Hash className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-widest">Root Note Filter</span>
-            </div>
-            <div className="flex gap-2">
-               <button onClick={selectAllRoots} className="text-[10px] font-bold uppercase text-indigo-600 hover:text-indigo-700">All</button>
-               <button onClick={clearAllRoots} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-500">Reset</button>
-            </div>
-          </div>
-          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-2">
-            {NOTE_NAMES.map(note => {
-              const isActive = enabledRoots.includes(note);
-              return (
-                <button
-                  key={note}
-                  onClick={() => toggleRootNote(note)}
-                  className={`
-                    py-2 rounded-lg text-xs font-bold transition-all border
-                    ${isActive 
-                      ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm' 
-                      : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'}
-                  `}
-                >
-                  {formatNoteLabel(note)}
-                </button>
-              );
-            })}
-          </div>
+        <div className="bg-white border border-slate-200 p-3 rounded-2xl flex flex-col justify-center">
+          <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">Voicing</span>
+          <span className="text-sm font-bold text-slate-800 truncate">{gameState.voicingType}</span>
+          <span className="text-[8px] text-slate-400 font-medium">({expectedNotes} notes)</span>
         </div>
       </div>
 
-      <main className="flex-1 space-y-8">
-        <div className="bg-white border border-slate-200 rounded-[2.5rem] p-6 md:p-8 shadow-xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 md:col-span-2">
-              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Target Chord</p>
-              <p className="text-5xl font-black text-slate-900">
-                {gameState.rootNote}<span className="text-indigo-600">{gameState.quality}</span>
-              </p>
+      {/* Fretboard Container */}
+      <div className="flex-1 min-h-0 flex flex-col justify-center gap-2">
+        <div className="bg-white border border-slate-200 rounded-3xl p-3 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-center mb-1 px-1">
+            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase">
+               <HelpCircle className="w-3 h-3 text-indigo-400" />
+               Window Control
             </div>
-
-            <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 flex flex-col justify-center">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Current Voicing</p>
-              <p className="text-xl font-bold text-slate-800">{gameState.voicingType}</p>
-              <p className="text-[10px] mt-2 text-slate-500 font-bold uppercase">Target: {expectedNotes} notes on {gameState.strings.length} strings</p>
+            <div className="flex gap-1">
+              <button onClick={() => shiftWindow('left')} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg"><ChevronLeft className="w-4 h-4" /></button>
+              <button onClick={() => shiftWindow('right')} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
-
-          <div className="mb-4 flex justify-between items-center text-sm px-2">
-            <div className="flex items-center gap-2 text-slate-500">
-              <HelpCircle className="w-4 h-4 text-indigo-400" />
-              <span>
-                {gameState.voicingType === VoicingType.OPEN_TRIAD 
-                  ? 'Spread the triad across the highlighted strings.' 
-                  : gameState.voicingType === VoicingType.DROP_3
-                  ? 'Identify the Drop 3 shape (1 string skipped between lowest note and upper block).'
-                  : 'Place notes on the indicated strings.'}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => shiftWindow('left')} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 transition-all shadow-sm"><ChevronLeft className="w-5 h-5" /></button>
-              <button onClick={() => shiftWindow('right')} className="p-2.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 transition-all shadow-sm"><ChevronRight className="w-5 h-5" /></button>
-            </div>
-          </div>
-
+          
           <Fretboard 
             windowStart={gameState.windowStartFret}
             activeStrings={gameState.strings}
@@ -310,35 +178,59 @@ const App: React.FC = () => {
             chordNotes={gameState.chordNotes}
           />
         </div>
+      </div>
 
-        <div className="flex flex-col items-center gap-4 py-4">
-          {!gameState.feedback ? (
-            <button
-              onClick={checkAnswer}
-              disabled={!canCheck}
-              className={`px-14 py-4 rounded-2xl text-lg font-bold transition-all shadow-lg flex items-center gap-2 ${canCheck ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-105 active:scale-95' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
-            >
-              Verify Voicing
-            </button>
-          ) : (
-            <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300 w-full max-w-md">
-              <div className={`flex items-center gap-3 px-8 py-4 rounded-2xl border w-full justify-center shadow-sm ${gameState.feedback === 'correct' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
-                {gameState.feedback === 'correct' ? <CheckCircle2 className="w-8 h-8" /> : <XCircle className="w-8 h-8" />}
-                <span className="text-2xl font-bold">{gameState.feedback === 'correct' ? 'Perfect!' : 'Not quite...'}</span>
-              </div>
-              <div className="flex gap-4 w-full">
-                {gameState.feedback === 'wrong' && (
-                  <button onClick={tryAgain} className="flex-1 flex items-center justify-center gap-2 bg-white text-slate-700 px-6 py-4 rounded-2xl font-bold border border-slate-200 shadow-md transition-all hover:scale-105"><RefreshCw className="w-5 h-5" />Try Again</button>
-                )}
-                <button onClick={startNewGame} className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold shadow-md transition-all hover:scale-105 ${gameState.feedback === 'correct' ? 'bg-indigo-600 text-white shadow-indigo-600/20' : 'bg-slate-900 text-white'}`}><RotateCcw className="w-5 h-5" />Next Puzzle</button>
-              </div>
+      {/* Action Area - Compact feedback and buttons */}
+      <div className="mt-auto py-2">
+        {!gameState.feedback ? (
+          <button
+            onClick={checkAnswer}
+            disabled={!canCheck}
+            className={`w-full py-3.5 rounded-2xl text-sm font-bold transition-all shadow-md ${canCheck ? 'bg-indigo-600 text-white active:scale-95' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+          >
+            Verify Shape
+          </button>
+        ) : (
+          <div className="animate-in fade-in zoom-in duration-200 flex flex-col gap-2">
+            <div className={`py-2.5 rounded-xl border flex items-center justify-center gap-2 ${gameState.feedback === 'correct' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+              {gameState.feedback === 'correct' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              <span className="text-sm font-bold">{gameState.feedback === 'correct' ? 'Correct!' : 'Try Again'}</span>
             </div>
-          )}
+            <div className="flex gap-2">
+              {gameState.feedback === 'wrong' && (
+                <button onClick={tryAgain} className="flex-1 py-3 bg-white text-slate-600 rounded-xl font-bold border border-slate-200 text-xs flex items-center justify-center gap-1"><RefreshCw className="w-3 h-3" /> Retry</button>
+              )}
+              <button onClick={startNewGame} className="flex-[2] py-3 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-lg active:scale-95"><RotateCcw className="w-3 h-3" /> Next Puzzle</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mini Settings Collapsible (Compact) */}
+      <details className="group border-t border-slate-200 pt-2 mt-1">
+        <summary className="list-none flex justify-center items-center gap-1 text-[10px] font-bold text-slate-400 cursor-pointer uppercase tracking-widest hover:text-indigo-500 transition-colors">
+          <Settings2 className="w-3 h-3" /> Training Options
+        </summary>
+        <div className="mt-2 space-y-3 p-1 animate-in slide-in-from-top-2 duration-200">
+           <div className="bg-slate-100/50 p-2 rounded-xl">
+             <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold mb-1"><Hash className="w-2 h-2" /> ROOTS</div>
+             <div className="flex flex-wrap gap-1">
+               {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
+                 <button key={n} onClick={() => toggleRootNote(n)} className={`px-2 py-1 rounded-md text-[9px] font-bold transition-all border ${enabledRoots.includes(n) ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white text-slate-400 border-slate-200'}`}>{n}</button>
+               ))}
+               <button onClick={selectAllRoots} className="px-2 py-1 rounded-md text-[9px] font-bold text-indigo-600 bg-white border border-indigo-100 italic">ALL</button>
+             </div>
+           </div>
+           <div className="bg-slate-100/50 p-2 rounded-xl">
+             <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold mb-1"><Settings2 className="w-2 h-2" /> TYPES</div>
+             <div className="flex flex-wrap gap-1">
+               {Object.values(VoicingType).map(t => (
+                 <button key={t} onClick={() => toggleVoicingType(t)} className={`px-2 py-1 rounded-md text-[9px] font-bold transition-all border ${enabledTypes.includes(t) ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white text-slate-400 border-slate-200'}`}>{t}</button>
+               ))}
+             </div>
+           </div>
         </div>
-      </main>
-      <footer className="py-8 text-center text-slate-400 text-xs font-medium">
-        <p>&copy; 2026 Guitar Voicing Master &bull; v1.0 &bull; Mastering the Fretboard One Voicing at a Time</p>
-      </footer>
+      </details>
     </div>
   );
 };
